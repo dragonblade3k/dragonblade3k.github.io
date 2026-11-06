@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Content Pipeline</title><meta name="description" content="Pick a topic and see the facts go in and the finished video come out.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="../shared.css">
+<style>
+.stages{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:22px 0}
+.stage{font:11px "JetBrains Mono",monospace;border:1px solid var(--border);border-radius:3px;padding:9px 8px;background:transparent;color:var(--muted);cursor:pointer;text-align:left;min-height:44px}
+.stage b{display:block;color:var(--accent);font-weight:500}.stage[aria-pressed=true]{background:var(--surface);color:var(--fg);border-color:var(--accent)}
+.grid{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:24px;align-items:start;margin-top:20px}
+video{width:100%;aspect-ratio:9/16;background:#000;border-radius:6px;display:block}
+ol{margin:10px 0 0;padding-left:20px}li{margin-bottom:8px}
+h2{font:500 15px "JetBrains Mono",monospace;margin:0 0 6px}p{margin:0}.muted{color:var(--muted)}
+code{font:13px "JetBrains Mono",monospace;background:var(--hover);padding:2px 5px;border-radius:3px;overflow-wrap:anywhere}
+@media(max-width:720px){.grid{grid-template-columns:1fr}.stages{grid-template-columns:1fr 1fr}video{max-width:300px;margin:auto}}
+</style></head><body><div class="wrap">
+<a class="back" href="/#projects">&larr; shantanusirjoshi.com</a>
+<h1>Content Pipeline<span>_</span></h1>
+<p class="lede">Pick a topic, then step through how its facts became this narrated video. These clips are real pipeline output, rendered ahead of time.</p>
+<div class="chips" id="topics" style="margin-top:16px"></div>
+<div class="stages" id="stages"></div>
+<div class="grid">
+  <video id="v" controls playsinline preload="metadata"></video>
+  <div class="card" aria-live="polite"><h2 id="st"></h2><p class="muted" id="sd"></p><div id="extra"></div></div>
+</div>
+<p class="foot">Code and tests: <a href="https://github.com/dragonblade3k/content-pipeline">github.com/dragonblade3k/content-pipeline</a></p>
+</div>
+<script>
+const TOPICS={"senna":{label:"Ayrton Senna",file:"senna.mp4",facts:["Ayrton Senna won three Formula 1 World Championships, in 1988, 1990, and 1991, all with McLaren.", "Senna set a career record for pole positions that stood for over a decade after his death.", "He died in a crash at the 1994 San Marino Grand Prix at Imola, a weekend that led to sweeping F1 safety reforms.", "Senna was famous for his qualifying pace in wet conditions, earning him a reputation as the best wet weather driver of his era.", "He and Alain Prost had one of the most intense rivalries in F1 history while teammates at McLaren in 1988 and 1989."]},"monaco-gp":{label:"Monaco GP",file:"monaco-gp.mp4",facts:["The Monaco Grand Prix has been run since 1929, making it one of the oldest races in motorsport.", "The circuit is just over 3.3 kilometers, the shortest on the current F1 calendar.", "Overtaking is famously difficult at Monaco, qualifying position often decides the race result.", "Ayrton Senna won the Monaco Grand Prix six times, a record that still stands.", "The race runs through the streets of Monte Carlo, past the harbor where spectators watch from yachts."]}};
+const STAGES=[["Research","research.py","Pulls verified facts for the topic. The source swaps with one environment variable: curated facts or a live F1 API.",t=>list(t.facts)],
+["Script","script_gen.py","Turns the facts into a 30 to 45 second spoken script. Works from a template or an LLM, chosen the same way.",()=>""],
+["Voice","tts.py","Renders each line to narration audio, with local text to speech by default.",()=>""],
+["Video","video.py","Draws a caption card for each line, syncs it to the audio and stitches a 1080 by 1920 mp4 with ffmpeg.",()=>""],
+["Metadata","metadata.py","Generates the title, caption and hashtags that ship with the clip.",t=>`<p style="margin-top:12px"><code>#F1 #Formula1 #F1Facts #Motorsport ${t.tag}</code></p>`]];
+const esc=s=>s.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const list=f=>"<ol>"+f.map(x=>`<li>${esc(x)}</li>`).join("")+"</ol>";
+TOPICS["senna"].tag="#Senna";TOPICS["monaco-gp"].tag="#MonacoGp";
+let topic="senna",stage=0;const $=i=>document.getElementById(i);
+$("topics").innerHTML=Object.entries(TOPICS).map(([k,t])=>`<button class="chip" data-k="${k}">${t.label}</button>`).join("");
+$("stages").innerHTML=STAGES.map((s,i)=>`<button class="stage" data-i="${i}"><b>0${i+1}</b>${s[0]}</button>`).join("");
+function draw(load){const t=TOPICS[topic],s=STAGES[stage];
+ document.querySelectorAll(".chip").forEach(b=>b.setAttribute("aria-pressed",b.dataset.k===topic));
+ document.querySelectorAll(".stage").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.i===stage));
+ $("st").textContent=s[0]+" // "+s[1];$("sd").textContent=s[2];$("extra").innerHTML=s[3](t);if(load)$("v").src=t.file;}
+$("topics").onclick=e=>{const k=e.target.dataset.k;if(k){topic=k;draw(true)}};
+$("stages").onclick=e=>{const b=e.target.closest(".stage");if(b){stage=+b.dataset.i;draw()}};
+draw(true);
+</script></body></html>
