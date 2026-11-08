@@ -43,7 +43,7 @@ export const PROJECTS = [
     tech: ["Python", "Ollama", "ffmpeg"],
     metrics: [
       ["stages", "5"],
-      ["tests", "102"],
+      ["tests", "111"],
     ],
     app: "/apps/content-pipeline/",
     url: "https://github.com/dragonblade3k/content-pipeline",
